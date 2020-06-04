@@ -12,29 +12,34 @@ const nanoid = customAlphabet(
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
 
-export default function(bucketName, { id, key }) {
+const env = process.env;
+
+export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   const b2 = new B2({ applicationKeyId: id, applicationKey: key });
 
   const bucketProm = new Promise(async (done, fail) => {
     try {
       await b2.authorize(); // must authorize first
       const list = await b2.listBuckets();
-      const bucket = list.data.buckets.find(b => b.bucketName === bucketName);
-      done(bucket.bucketId);
+      done(list.data.buckets.find(b => b.bucketName === name));
     } catch (error) {
       console.log("AUTH", error.request.res);
       fail(error);
     }
   });
 
-  const getBucket = () => {
-    return bucketProm;
-  };
+  const info = () => bucketProm;
 
   const list = async () => {
-    const bucketId = await getBucket();
+    const { bucketId } = await info();
     const res = await b2.listFileNames({ bucketId });
     return res.data.files.map(file => file.fileName);
+  };
+
+  const count = async () => {
+    const { bucketId } = await info();
+    const res = await b2.listFileNames({ bucketId });
+    return res.data.files.length;
   };
 
   const exists = async file => {
@@ -44,9 +49,9 @@ export default function(bucketName, { id, key }) {
 
   const download = async (remote, local) => {
     local = local || nanoid() + "." + remote.split(".").pop();
-    const bucketId = await getBucket();
+    const { bucketId } = await info();
     const down = await b2.downloadFileByName({
-      bucketName,
+      bucketName: name,
       fileName: remote,
       responseType: "arraybuffer"
     });
@@ -56,7 +61,7 @@ export default function(bucketName, { id, key }) {
 
   const upload = async (local, remote) => {
     remote = remote || nanoid() + "." + local.split(".").pop();
-    const bucketId = await getBucket();
+    const { bucketId } = await info();
     const [res, data] = await Promise.all([
       b2.getUploadUrl({ bucketId }),
       readFile(local)
@@ -72,7 +77,7 @@ export default function(bucketName, { id, key }) {
   };
 
   const remove = async file => {
-    const bucketId = await getBucket();
+    const { bucketId } = await info();
     const res = await b2.listFileNames({ bucketId });
     const fullFile = res.data.files.find(f => f.fileName === file);
     await b2.deleteFileVersion({
@@ -82,5 +87,5 @@ export default function(bucketName, { id, key }) {
     return file;
   };
 
-  return { list, exists, download, upload, remove };
+  return { info, list, count, exists, download, upload, remove };
 }

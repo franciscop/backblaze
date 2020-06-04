@@ -5,16 +5,17 @@ import Bucket from "../index.js";
 
 dotenv.config();
 
-const bucket = Bucket("bucket-demo", {
-  id: process.env.B2_ID,
-  key: process.env.B2_KEY
-});
+const bucket = Bucket("bucket-demo");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 (async () => {
   try {
     let init = new Date();
+    const info = await bucket.info();
+    console.log("Info:", info, new Date() - init, "ms");
+
+    init = new Date();
     const list = await bucket.list();
     console.log("Files:", list, new Date() - init, "ms");
 

@@ -20,20 +20,13 @@ const remote = await bucket.upload('./avatar.png');
 await bucket.download(remote, './avatar-copy.png');
 ```
 
-> Please note that all the relative files are relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). You can provide absolute paths for better certainty.
+> Please note that relative file paths are relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). You can always provide absolute paths.
 
 All of the methods are async and are related to a single bucket. You can work with multiple buckets as well by creating them as expected:
 
 ```js
-const bucket1 = Bucket('bucket-name-1', {
-  id: process.env.B2_ID,
-  key: process.env.B2_KEY
-});
-
-const bucket2 = Bucket('bucket-name-2', {
-  id: process.env.B2_ID,
-  key: process.env.B2_KEY
-});
+const bucket1 = Bucket('bucket-name-1', { ... });
+const bucket2 = Bucket('bucket-name-2', { ... });
 ```
 
 
@@ -41,8 +34,7 @@ const bucket2 = Bucket('bucket-name-2', {
 ## API
 
 - `Bucket(name, { id, key })`
-- `bucket.name`
-- `bucket.meta()` // {id, name, etc}
+- `bucket.info()` // {id, name, etc}
 - `bucket.list()`
 - `bucket.count()`
 - `bucket.exists(remote)`
@@ -51,53 +43,166 @@ const bucket2 = Bucket('bucket-name-2', {
 - `bucket.remove(remote)`
 - Others? Propose them on Github.
 
+
+
 ### Bucket()
 
-Create an instance associated to a bucket.
+Create an instance associated to a bucket. It receives first the bucket name, and then an object with the config:
+
+```js
+const bucket = Bucket("bucket-demo", {
+  id: process.env.B2_ID,
+  key: process.env.B2_KEY
+});
+```
+
+No need for `new` or `await`. Internally it will start loading the bucket as soon as initialized like this, and if it hasn't loaded by the time it's used then it will await on the first operation for it.
+
+The `id` and `key`, and the second parameter altogether, can be skipped if the environment variables `B2_ID` and `B2_KEY` have been set respectively:
+
+```js
+const bucket = Bucket("bucket-demo");
+```
+
+
+
+### .info()
+
+Load some information related to the bucket itself:
+
+```js
+const info = await bucket.info();
+console.log(info);
+// {
+//   accountId: '...',
+//   bucketId: '...',
+//   bucketInfo: {},
+//   bucketName: '...',
+//   bucketType: '...',
+//   corsRules: [],
+//   lifecycleRules: [],
+//   options: [ 's3' ],
+//   revision: 2
+// }
+```
+
+
 
 ### .list()
 
-Show a list with the filenames of the files in your bucket. It displays all of the filenames in the bucket:
+Show a list with the filenames of the files in your bucket. It displays all of the filenames in the bucket including any subfolders:
 
 ```js
-
+const list = await bucket.list();
+console.log(list);
+// [ 'avatar.png', 'users/abc.png', ... ]
 ```
+
+
+
+### .count()
+
+Display the number of items inside a bucket, including sub-folder files:
+
+```js
+await bucket.count();
+// 27
+```
+
+
 
 ### .upload()
 
 Upload a local file to the bucket:
 
 ```js
-bucket.upload(localFile, remoteFileName) => remoteFileName
+bucket.upload(localFilePath, [remoteFileName]) => remoteFileName
 ```
 
-The arguments can be:
+The arguments are:
 
-- `localFile` (required): the path to the file to be uploaded. It's preferred for it to be absolute, but relative (to the **running** dir) are also accepted. TODO: accept a byte sequence.
-- `remoteFileName` (optional): the name of the file in the bucket. Leave it empty to autogenerate the name. We are purposefully avoiding reusing the `localFile` name to avoid collisions and issues.
+- `localFilePath` (required): the path to the file to be uploaded. It will be relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). TODO: accept a byte sequence.
+- `remoteFileName` (optional): the name of the file in the bucket. Leave it empty to autogenerate the name. We are purposefully avoiding reusing the `localFilePath` name to avoid collisions and other issues.
 
-#### Examples
+```js
+// Just upload a file and get the path in the response:
+const file = await bucket.upload('./avatar.png');
+console.log(file);  // Ul25dvOx00.png
+
+// Upload a file inside a folder and specify the remote name:
+await bucket.upload('./public/favicon.png', 'favicon.png');
+
+// Upload a file to a folder in the bucket:
+await bucket.upload('./avatar.png', 'public/favicon.png');
+
+// Absolute paths:
+await bucket.upload(__dirname + '/avatar.png', 'favicon.png')
+```
+
+If you are using a modern Node.js version that doesn't define `__dirname`, you can create `__dirname` like this:
+
+```jsx
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+```
+
+
+
+### .download()
+
+Downloads a file from the bucket into the server:
+
+```js
+bucket.download(remoteFileName, [localFilePath]) => localFilePath
+```
+
+The arguments are:
+
+- `remoteFileName` (required): the name of the file in the bucket. It can be inside a folder as well.
+- `localFilePath` (optional): the path where the file will be located. It will be relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). Leave it empty to use the current working directory and the remote file name.
+
 
 ```js
 // Upload the file with the same name as locally:
-bucket.upload('./avatar.png', 'avatar.png');
+const path = await bucket.download('avatar.png');
+console.log(path);  //  /users/me/projects/backblaze/avatar.png
 
 // Upload a file inside a folder to the root:
-bucket.upload('./public/favicon.png', 'favicon.png');
+await bucket.download('favicon.png', './public/favicon.png');
 
 // Upload a file to a folder in the bucket:
-bucket.upload('./avatar.png', 'public/favicon.png');
+await bucket.download('public/favicon.png', './avatar.png');
+
+// Absolute paths:
+await bucket.download('favicon.png', __dirname + '/avatar.png')
 ```
 
-See [the Node.js docs](https://nodejs.org/api/esm.html#esm_no_require_exports_module_exports_filename_dirname) for making the path absolute.
+If you are using a modern Node.js version that doesn't define `__dirname`, you can create `__dirname` like this:
+
+```jsx
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+```
+
 
 
 
 
 ### .exists()
 
-> TODO
+Check whether a file exists on the bucket:
 
-### .count()
+```js
+if (await bucket.exists('avatar.png')) {
+  console.log('Avatar already exists');
+}
 
-> TODO
+// Check inside a subfolder
+if (await bucket.exists('users/abc.png')) {
+  console.log('User already has a profile picture');
+}
+```
