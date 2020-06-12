@@ -47,6 +47,27 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 ### Bucket()
 
+PROPOSED:
+
+```js
+import { Amazon, Backblaze, Cloudinary, Google } from 'bucket';
+
+const bucket = Backblaze('bucket-name', { ...credentials });
+
+const file = await bucket.upload('./avatar.png');
+console.log(file);
+// 'kwergvckwsdb.png'
+
+console.log(await bucket.list());
+// [{ path: 'avatar.png', ... }, { path: 'profile.png', ...}, ...]
+
+file.id     // dfgadfbvrt
+file.path   // public/avatar.png
+file.dir    // public/
+file.name   // avatar.png
+file.url    // https://service.com/bucket-name/public/avatar.png
+```
+
 Create an instance associated to a bucket. It receives first the bucket name, and then an object with the config:
 
 ```js
