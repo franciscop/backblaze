@@ -23,7 +23,7 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
       const list = await b2.listBuckets();
       done(list.data.buckets.find((b) => b.bucketName === name));
     } catch (error) {
-      console.log("AUTH", error.request.res);
+      console.error("AUTH", error.request.res);
       fail(error);
     }
   });
