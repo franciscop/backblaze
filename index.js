@@ -87,5 +87,5 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     return file;
   };
 
-  return { info, list, count, exists, download, upload, remove };
+  return { info, list, count, exists, upload, download, remove };
 }

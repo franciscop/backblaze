@@ -33,6 +33,8 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 ## API
 
+The main function is synchronous, but all of the methods are async so they should be used with `await`:
+
 - `Bucket(name, { id, key })`
 - `bucket.info()` // {id, name, etc}
 - `bucket.list()`
@@ -47,12 +49,10 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 ### Bucket()
 
-PROPOSED:
-
 ```js
-import { Amazon, Backblaze, Cloudinary, Google } from 'bucket';
+import Bucket from 'backblaze';
 
-const bucket = Backblaze('bucket-name', { ...credentials });
+const bucket = Backblaze('bucket-name', { id, key });
 
 const file = await bucket.upload('./avatar.png');
 console.log(file);
