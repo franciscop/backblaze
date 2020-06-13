@@ -22,7 +22,7 @@ await bucket.download(remote, './avatar-copy.png');
 
 > Please note that relative file paths are relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). You can always provide absolute paths.
 
-All of the methods are async and are related to a single bucket. You can work with multiple buckets as well by creating them as expected:
+You can work with multiple buckets as well by creating them as expected:
 
 ```js
 const bucket1 = Bucket('bucket-name-1', { ... });
@@ -33,7 +33,7 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 ## API
 
-The main function is synchronous, but all of the methods are async so they should be used with `await`:
+All of the methods are async so they should be used with `await`:
 
 - `Bucket(name, { id, key })`
 - `bucket.info()` // {id, name, etc}
