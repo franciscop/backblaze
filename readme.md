@@ -35,15 +35,15 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 All of the methods are async so they should be used with `await`:
 
-- `File`
-- `Bucket(name, { id, key })`
-- `bucket.info()` // {id, name, etc}
-- `bucket.list()`
-- `bucket.count()`
-- `bucket.exists(remote)`
-- `bucket.upload(local, remote)`
-- `bucket.download(remote, local)`
-- `bucket.remove(remote)`
+- [`File`](#file): an abstraction for the remote file use in the API.
+- [`Bucket(name, { id, key })`](#bucket): initialize the API with the credentials.
+- [`bucket.info()`](#info): load some information related to the bucket itself.
+- [`bucket.list()`](#list): show a list with all of the files in your bucket.
+- [`bucket.count()`](#count): display the number of items inside a bucket.
+- [`bucket.upload(local, remote)`](#upload): upload a local file to the bucket.
+- [`bucket.download(remote, local)`](#download): downloads a file from the bucket into the server.
+- [`bucket.exists(remote)`](#exists): check whether a file exists on the bucket.
+- [`bucket.remove(remote)`](#remove): delete a file from the bucket.
 
 
 
