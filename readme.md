@@ -11,7 +11,7 @@ const bucket = Bucket('bucket-name', {
 });
 
 console.log(await bucket.list());
-// ['favicon.png', 'hello.png', ...]
+// [{ name: 'favicon.png', ...}, { name: 'hello.png', ...}, ...]
 
 // Upload a file from a local file to an auto-generated name
 const remote = await bucket.upload('./avatar.png');
@@ -47,6 +47,31 @@ All of the methods are async so they should be used with `await`:
 
 
 
+### File
+
+A `File` is a plain object with these properties:
+
+- `name`: the filename, same as the one listed with `bucket.list()`.
+- `type`: the MIME type of the file, e.g. `image/png`.
+- `size`: the weight of the file in Bytes.
+- `url`: the URL for the file, specially useful if the bucket is public so that you can save this url straight away. It has the shape of `https://fNNN.backblazeb2.com/file/BUCKET/FILE`, where `NNN` depends on your account, `BUCKET` is the bucket name and `FILE` is the file name.
+- `timestamp`: the uploaded timestamp as an instance of a native Date() object.
+
+This is useful to define since it appears in different parts of the API, like in the `.list()` and `.upload()` APIs:
+
+```js
+const file = await bucket.upload(...);
+console.log(file);
+// {
+//   name: 'kwergvckwsdb.png',
+//   type: 'image/png',
+//   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//   timestamp: new Date(...)
+// }
+```
+
+
+
 ### Bucket()
 
 ```js
@@ -56,10 +81,25 @@ const bucket = Backblaze('bucket-name', { id, key });
 
 const file = await bucket.upload('./avatar.png');
 console.log(file);
-// 'kwergvckwsdb.png'
+// {
+//   name: 'kwergvckwsdb.png',
+//   type: 'image/png',
+//   size: 11554,
+//   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//   timestamp: new Date(...)
+// }
 
 console.log(await bucket.list());
-// ['avatar.png', 'profile.png', ...]
+// [
+//   {
+//     name: 'kwergvckwsdb.png',
+//     type: 'image/png',
+//     size: 11554,
+//     url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//     timestamp: new Date(...)
+//   },
+//   ...
+// ]
 ```
 
 Create an instance associated to a bucket. It receives first the bucket name, and then an object with the config:
@@ -97,7 +137,8 @@ console.log(info);
 //   corsRules: [],
 //   lifecycleRules: [],
 //   options: [ 's3' ],
-//   revision: 2
+//   revision: 2,
+//   baseURL: 'https://fNNN.backblazeb2.com/file/BUCKET/'
 // }
 ```
 
@@ -105,12 +146,29 @@ console.log(info);
 
 ### .list()
 
-Show a list with the filenames of the files in your bucket. It displays all of the filenames in the bucket including any subfolders:
+Show a list with all of the files in your bucket. Each one is [a File object](#file) with few properties related to the file. It includes files in subfolders:
 
 ```js
 const list = await bucket.list();
 console.log(list);
-// [ 'avatar.png', 'users/abc.png', ... ]
+// [
+//   {
+//     name: 'kwergvckwsdb.png',
+//     type: 'image/png',
+//     size: 11554,
+//     url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//     timestamp: new Date(...)
+//   },
+//   ...
+// ]
+```
+
+You might just want to read only e.g. the filenames, so you can `.map()` it with Javascript:
+
+```js
+const list = await bucket.list();
+console.log(list.map(file => file.name));
+// ['avatar.png', 'kwergvckwsdb.png', ...]
 ```
 
 
@@ -131,7 +189,7 @@ await bucket.count();
 Upload a local file to the bucket:
 
 ```js
-bucket.upload(localFilePath, [remoteFileName]) => remoteFileName
+bucket.upload(localFilePath, [remoteFileName]) => File
 ```
 
 The arguments are:
@@ -139,10 +197,19 @@ The arguments are:
 - `localFilePath` (required): the path to the file to be uploaded. It will be relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). TODO: accept a byte sequence.
 - `remoteFileName` (optional): the name of the file in the bucket. Leave it empty to autogenerate the name. We are purposefully avoiding reusing the `localFilePath` name to avoid collisions and other issues.
 
+It returns [a File object](#file) with the properties `name`, `type`, `size`, `url` and `timestamp` as usual:
+
 ```js
 // Just upload a file and get the path in the response:
 const file = await bucket.upload('./avatar.png');
-console.log(file);  // Ul25dvOx00.png
+console.log(file);
+// {
+//   name: 'kwergvckwsdb.png',
+//   type: 'image/png',
+//   size: 11554,
+//   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//   timestamp: new Date(...)
+// }
 
 // Upload a file inside a folder and specify the remote name:
 await bucket.upload('./public/favicon.png', 'favicon.png');
@@ -175,7 +242,7 @@ bucket.download(remoteFileName, [localFilePath]) => localFilePath
 
 The arguments are:
 
-- `remoteFileName` (required): the name of the file in the bucket. It can be inside a folder as well.
+- `remoteFileName` (required): the name of the file in the bucket. It can be inside a folder as well. You can pass either a plain string with the name, or [a full File](#file) reference.
 - `localFilePath` (optional): the path where the file will be located. It will be relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). Leave it empty to use the current working directory and the remote file name.
 
 
@@ -212,6 +279,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 Check whether a file exists on the bucket:
 
 ```js
+bucket.exists(remoteFileName, [localFilePath]) => Boolean
+```
+
+It accepts either a string name or [a full File reference](#file):
+
+```js
 if (await bucket.exists('avatar.png')) {
   console.log('Avatar already exists');
 }
@@ -221,3 +294,32 @@ if (await bucket.exists('users/abc.png')) {
   console.log('User already has a profile picture');
 }
 ```
+
+
+
+### .remove()
+
+Delete a file from the bucket:
+
+```js
+bucket.remove(remoteFileName, [localFilePath]) => File
+```
+
+It accepts either a string name or [a full File reference](#file):
+
+```js
+const file = await bucket.remove('avatar.png');
+console.log(file);
+// {
+//   name: 'kwergvckwsdb.png',
+//   type: 'image/png',
+//   size: 11554,
+//   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
+//   timestamp: new Date(...)
+// }
+
+// Remove from inside a subfolder
+await bucket.remove('users/abc.png');
+```
+
+It returns the description of the file that was removed.
