@@ -97,6 +97,10 @@ const bucket = Bucket("bucket-demo", {
 });
 ```
 
+The ID and KEY correspond to these fields when creating a new key:
+
+![Pointing at the UI](./test/create-key.png)
+
 The `id` and `key`, and the second parameter altogether, can be skipped if the environment variables `B2_ID` and `B2_KEY` have been set respectively:
 
 ```js
