@@ -72,7 +72,9 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   };
 
   const upload = async (local, remote) => {
-    remote = remote || nanoid() + "." + local.split(".").pop();
+    remote = remote
+      ? remote.name || remote
+      : nanoid() + "." + local.split(".").pop();
     const { bucketId } = await info();
     const [res, data] = await Promise.all([
       b2.getUploadUrl({ bucketId }),

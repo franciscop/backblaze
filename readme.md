@@ -1,6 +1,6 @@
 # Backblaze
 
-An *unofficial* package to easily deal with Backblaze API on Node.js:
+An *unofficial* package to easily deal with Backblaze B2 API on Node.js:
 
 ```js
 import Bucket from 'backblaze';
@@ -35,6 +35,7 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 All of the methods are async so they should be used with `await`:
 
+- `File`
 - `Bucket(name, { id, key })`
 - `bucket.info()` // {id, name, etc}
 - `bucket.list()`
@@ -43,7 +44,6 @@ All of the methods are async so they should be used with `await`:
 - `bucket.upload(local, remote)`
 - `bucket.download(remote, local)`
 - `bucket.remove(remote)`
-- Others? Propose them on Github.
 
 
 
@@ -70,39 +70,25 @@ console.log(file);
 // }
 ```
 
+> Note that it is not a class or an instance of anything, just a shared plain object structure.
+
 
 
 ### Bucket()
 
+Create an instance that can communicate with the specified bucket:
+
 ```js
 import Bucket from 'backblaze';
-
-const bucket = Backblaze('bucket-name', { id, key });
-
-const file = await bucket.upload('./avatar.png');
-console.log(file);
-// {
-//   name: 'kwergvckwsdb.png',
-//   type: 'image/png',
-//   size: 11554,
-//   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
-//   timestamp: new Date(...)
-// }
-
-console.log(await bucket.list());
-// [
-//   {
-//     name: 'kwergvckwsdb.png',
-//     type: 'image/png',
-//     size: 11554,
-//     url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
-//     timestamp: new Date(...)
-//   },
-//   ...
-// ]
+const bucket = Bucket('bucket-name', { id, key });
+// await bucket.upload();
+// await bucket.download();
+// ...
 ```
 
-Create an instance associated to a bucket. It receives first the bucket name, and then an object with the config:
+> You should not use the `new` nor `await` keywords when creating a bucket.
+
+It receives first the bucket name, and then an object with the config which preferably should come from the environment variables:
 
 ```js
 const bucket = Bucket("bucket-demo", {
@@ -111,12 +97,24 @@ const bucket = Bucket("bucket-demo", {
 });
 ```
 
-No need for `new` or `await`. Internally it will start loading the bucket as soon as initialized like this, and if it hasn't loaded by the time it's used then it will await on the first operation for it.
-
 The `id` and `key`, and the second parameter altogether, can be skipped if the environment variables `B2_ID` and `B2_KEY` have been set respectively:
 
 ```js
 const bucket = Bucket("bucket-demo");
+```
+
+#### How it works
+
+It will start loading the bucket as soon as initialized like this, and if it hasn't loaded by the time it's used then it will await on the first operation for it. That is why you don't need the `await` or `new` keywords.
+
+If you _really_ want to wait for it finish auth and other loading before using it, you can force it like this:
+
+```js
+const bucket = Bucket("bucket-demo", {
+  id: process.env.B2_ID,
+  key: process.env.B2_KEY
+});
+await bucket.info();
 ```
 
 
@@ -163,7 +161,7 @@ console.log(list);
 // ]
 ```
 
-You might just want to read only e.g. the filenames, so you can `.map()` it with Javascript:
+You might just want to read only e.g. the filenames, so you can `.map()` it with plain Javascript:
 
 ```js
 const list = await bucket.list();
@@ -279,7 +277,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 Check whether a file exists on the bucket:
 
 ```js
-bucket.exists(remoteFileName, [localFilePath]) => Boolean
+bucket.exists(remoteFileName) => Boolean
 ```
 
 It accepts either a string name or [a full File reference](#file):
@@ -302,7 +300,7 @@ if (await bucket.exists('users/abc.png')) {
 Delete a file from the bucket:
 
 ```js
-bucket.remove(remoteFileName, [localFilePath]) => File
+bucket.remove(remoteFileName) => File
 ```
 
 It accepts either a string name or [a full File reference](#file):
