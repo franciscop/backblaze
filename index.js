@@ -96,17 +96,23 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     };
   };
 
-  const remove = async (file) => {
-    // Allow to pass an object with the full file description
-    file = file.name || file;
-    const { bucketId } = await info();
+  const remove = async (remote) => {
+    // Allow to pass an object with the full remote description
+    remote = remote.name || remote;
+    const { bucketId, baseURL } = await info();
     const res = await b2.listFileNames({ bucketId });
-    const fullFile = res.data.files.find((f) => f.fileName === file);
+    const file = res.data.files.find((f) => f.fileName === remote);
     await b2.deleteFileVersion({
-      fileId: fullFile.fileId,
-      fileName: fullFile.fileName,
+      fileId: file.fileId,
+      fileName: file.fileName,
     });
-    return file;
+    return {
+      name: file.fileName,
+      type: file.contentType,
+      size: file.contentLength,
+      url: baseURL + file.fileName,
+      timestamp: new Date(file.uploadTimestamp),
+    };
   };
 
   return { info, list, count, exists, upload, download, remove };
