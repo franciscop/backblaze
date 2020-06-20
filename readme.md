@@ -97,7 +97,7 @@ const bucket = Bucket("bucket-demo", {
 });
 ```
 
-The ID and KEY correspond to these fields when creating a new key:
+The `id` and `key` fields correspond to these fields when creating a new key:
 
 ![Pointing at the UI](./test/create-key.png)
 
