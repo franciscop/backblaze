@@ -6,7 +6,7 @@ An *unofficial* package to easily deal with Backblaze B2 API on Node.js:
 import Bucket from 'backblaze';
 
 const bucket = Bucket('bucket-name', {
-  id: process.env.B2_ID,   // Use an id-key that are not master for security
+  id: process.env.B2_ID,
   key: process.env.B2_KEY
 });
 
@@ -14,13 +14,13 @@ console.log(await bucket.list());
 // [{ name: 'favicon.png', ...}, { name: 'hello.png', ...}, ...]
 
 // Upload a file from a local file to an auto-generated name
-const remote = await bucket.upload('./avatar.png');
+const file = await bucket.upload('./avatar.png');
 
 // Let's download it now as a copy locally
-await bucket.download(remote, './avatar-copy.png');
+await bucket.download(file, './avatar-copy.png');
 ```
 
-> Please note that relative file paths are relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). You can always provide absolute paths.
+> Please note that file paths are relative to the **working directory** [as specified on Node.js' fs](https://nodejs.org/api/fs.html#fs_file_paths). You can always provide absolute paths.
 
 You can work with multiple buckets as well by creating them as expected:
 
@@ -35,7 +35,7 @@ const bucket2 = Bucket('bucket-name-2', { ... });
 
 All of the methods are async so they should be used with `await`:
 
-- [`File`](#file): an abstraction for the remote file use in the API.
+- [`File`](#file): a description for the remote file use in the API.
 - [`Bucket(name, { id, key })`](#bucket): initialize the API with the credentials.
 - [`bucket.info()`](#info): load some information related to the bucket itself.
 - [`bucket.list()`](#list): show a list with all of the files in your bucket.
@@ -65,6 +65,7 @@ console.log(file);
 // {
 //   name: 'kwergvckwsdb.png',
 //   type: 'image/png',
+//   size: 11554,
 //   url: 'https://fNNN.backblazeb2.com/file/BUCKET/kwergvckwsdb.png'
 //   timestamp: new Date(...)
 // }
@@ -107,7 +108,7 @@ The `id` and `key`, and the second parameter altogether, can be skipped if the e
 const bucket = Bucket("bucket-demo");
 ```
 
-#### How it works
+#### How Bucket() works internally
 
 It will start loading the bucket as soon as initialized like this, and if it hasn't loaded by the time it's used then it will await on the first operation for it. That is why you don't need the `await` or `new` keywords.
 
