@@ -1,5 +1,3 @@
-> Hacktoberfest devs! Please only submit PRs following the [two opened Issues](https://github.com/franciscop/backblaze/issues) or with meaningful documentation contributions. SPAM will be reported to Github and DigitalOcean.
-
 # Backblaze
 
 An *unofficial* package to easily deal with Backblaze B2 API on Node.js:
