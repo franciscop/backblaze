@@ -17,12 +17,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     const list = await bucket.list();
     console.log("Files:", list);
 
-    const there = await bucket.exists("Ul25dvOx00.png");
+    const there = await bucket.exists("AmZmqtAgTA.png");
     const notthere = await bucket.exists("abc.png");
     console.log("Exists:", there, notthere);
 
     const file = await bucket.upload(__dirname + "/example.png");
     console.log("Upload:", file);
+
+    const listFilter = await bucket.list(file.name.slice(0, 6));
+    console.log(`Filter List (${listFilter.length}):`, listFilter[0]);
 
     const local = await bucket.download(file, __dirname + "/example2.png");
     console.log("Download:", local);

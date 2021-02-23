@@ -14,7 +14,7 @@ const writeFile = promisify(fs.writeFile);
 
 const env = process.env;
 
-export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
+export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   const b2 = new B2({ applicationKeyId: id, applicationKey: key });
   let bucket = {};
 
@@ -22,27 +22,35 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     try {
       const auth = await b2.authorize(); // must authorize first
       const baseURL = auth.data.downloadUrl + "/file/" + name + "/";
-      const list = await b2.listBuckets();
-      const raw = list.data.buckets.find((b) => b.bucketName === name);
+
+      const res = await b2.getBucket({ bucketName: name });
+      const raw = res.data.buckets[0];
+      // const list = await b2.listBuckets();
+      // const raw = list.data.buckets.find(b => b.bucketName === name);
+
       bucket = { ...raw, baseURL };
       done(bucket);
     } catch (error) {
-      console.error("AUTH", error.request.res);
+      console.error("AUTH", error.request ? error.request.res : error);
       fail(error);
     }
   });
 
   const info = () => bucketProm;
 
-  const list = async () => {
+  const list = async prefix => {
     const { bucketId, baseURL } = await info();
-    const res = await b2.listFileNames({ bucketId });
-    return res.data.files.map((file) => ({
+    const res = await b2.listFileNames({
+      bucketId,
+      prefix,
+      maxFileCount: 10000
+    });
+    return res.data.files.map(file => ({
       name: file.fileName,
       type: file.contentType,
       size: file.contentLength,
       url: baseURL + file.fileName,
-      timestamp: new Date(file.uploadTimestamp),
+      timestamp: new Date(file.uploadTimestamp)
     }));
   };
 
@@ -52,7 +60,7 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     return res.data.files.length;
   };
 
-  const exists = async (file) => {
+  const exists = async file => {
     const files = await list();
     return files.includes(file);
   };
@@ -65,7 +73,7 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     const down = await b2.downloadFileByName({
       bucketName: name,
       fileName: remote,
-      responseType: "arraybuffer",
+      responseType: "arraybuffer"
     });
     await writeFile(local, down.data);
     return path.resolve(process.cwd(), local);
@@ -78,40 +86,40 @@ export default function (name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     const { bucketId } = await info();
     const [res, data] = await Promise.all([
       b2.getUploadUrl({ bucketId }),
-      readFile(local),
+      readFile(local)
     ]);
     const { authorizationToken, uploadUrl } = res.data;
     const uploaded = await b2.uploadFile({
       fileName: remote,
       uploadUrl,
       uploadAuthToken: authorizationToken,
-      data,
+      data
     });
     return {
       name: uploaded.data.fileName,
       type: uploaded.data.contentType,
       size: uploaded.data.contentLength,
       url: bucket.baseURL + uploaded.data.fileName,
-      timestamp: new Date(uploaded.data.uploadTimestamp),
+      timestamp: new Date(uploaded.data.uploadTimestamp)
     };
   };
 
-  const remove = async (remote) => {
+  const remove = async remote => {
     // Allow to pass an object with the full remote description
     remote = remote.name || remote;
     const { bucketId, baseURL } = await info();
     const res = await b2.listFileNames({ bucketId });
-    const file = res.data.files.find((f) => f.fileName === remote);
+    const file = res.data.files.find(f => f.fileName === remote);
     await b2.deleteFileVersion({
       fileId: file.fileId,
-      fileName: file.fileName,
+      fileName: file.fileName
     });
     return {
       name: file.fileName,
       type: file.contentType,
       size: file.contentLength,
       url: baseURL + file.fileName,
-      timestamp: new Date(file.uploadTimestamp),
+      timestamp: new Date(file.uploadTimestamp)
     };
   };
 
