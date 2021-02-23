@@ -1,4 +1,4 @@
-# Backblaze
+# Backblaze [![Status](https://github.com/franciscop/backblaze/workflows/tests/badge.svg)](https://github.com/franciscop/backblaze/actions)
 
 An _unofficial_ package to easily deal with Backblaze B2 API on Node.js:
 
