@@ -1,3 +1,11 @@
+## 2.1.0
+
+- [new feature] Added filter prefix to .list(filter).
+- Increased file count for `.list()`.
+- Added workflow testing.
+- [bug] Allow to limit the key to only current bucket, and it still works.
+- [bug] Removed unused Jest
+
 ### 2.0.2
 
 Improved documentation on npm.

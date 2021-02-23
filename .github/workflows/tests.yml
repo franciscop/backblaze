@@ -23,3 +23,5 @@ jobs:
         run: npm test
         env:
           CI: true
+          B2_ID: ${{ secrets.B2_ID }}
+          B2_KEY: ${{ secrets.B2_KEY }}
