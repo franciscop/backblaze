@@ -1,6 +1,6 @@
 {
   "name": "backblaze",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "description": "An unofficial package to easily deal with Backblaze B2 API",
   "homepage": "https://github.com/franciscop/backblaze#readme",
   "repository": "https://github.com/franciscop/backblaze.git",
