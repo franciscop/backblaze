@@ -39,36 +39,69 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   const info = () => bucketProm;
 
   const list = async prefix => {
+    // Ignore leading slash like "/" or "/data"
+    if (prefix) prefix = prefix.replace(/^\//, "");
+
     const { bucketId, baseURL } = await info();
-    const res = await b2.listFileNames({
-      bucketId,
-      prefix,
-      maxFileCount: 10000
-    });
-    return res.data.files.map(file => ({
+
+    // Transform from the B2 format to the normalized File definition
+    const toFile = file => ({
       name: file.fileName,
       type: file.contentType,
       size: file.contentLength,
       url: baseURL + file.fileName,
       timestamp: new Date(file.uploadTimestamp)
-    }));
+    });
+    const files = [];
+    let next = null;
+    do {
+      const res = await b2.listFileNames({
+        bucketId,
+        prefix,
+        startFileName: next,
+        maxFileCount: 10000
+      });
+      files.push(...res.data.files.map(toFile));
+      next = res.data.nextFileName;
+    } while (next);
+    return files;
   };
 
-  const count = async () => {
+  const count = async prefix => {
+    // Ignore leading slash like "/" or "/data"
+    if (prefix) prefix = prefix.replace(/^\//, "");
+
     const { bucketId } = await info();
-    const res = await b2.listFileNames({ bucketId });
+    const res = await b2.listFileNames({
+      bucketId,
+      prefix,
+      maxFileCount: 10000
+    });
     return res.data.files.length;
   };
 
-  const exists = async file => {
+  const file = async remote => {
+    remote = remote.name || remote;
+    remote = remote.replace(/^\//, "");
     const files = await list();
-    return files.includes(file);
+    return files.find(file => file.name === remote);
+  };
+
+  const exists = async remote => {
+    remote = remote.name || remote;
+    remote = remote.replace(/^\//, "");
+    const files = await list();
+    return Boolean(files.find(file => file.name === remote));
   };
 
   const download = async (remote, local) => {
     // Allow to pass an object with the full file description
     remote = remote.name || remote;
-    local = local || nanoid() + "." + remote.split(".").pop();
+    remote = remote.replace(/^\//, "");
+
+    // Ignore any leading slash
+    remote = remote.replace(/^\//, "");
+    local = local || "./" + remote;
     const { bucketId } = await info();
     const down = await b2.downloadFileByName({
       bucketName: name,
@@ -80,9 +113,11 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   };
 
   const upload = async (local, remote) => {
-    remote = remote
-      ? remote.name || remote
-      : nanoid() + "." + local.split(".").pop();
+    const ext = local.split(".").pop();
+    remote = remote ? remote.name || remote : nanoid() + "." + ext;
+    if (remote.endsWith("/")) remote = remote + nanoid() + "." + ext;
+    remote = remote.replace(/^\//, "");
+
     const { bucketId } = await info();
     const [res, data] = await Promise.all([
       b2.getUploadUrl({ bucketId }),
@@ -107,20 +142,20 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   const remove = async remote => {
     // Allow to pass an object with the full remote description
     remote = remote.name || remote;
-    const { bucketId, baseURL } = await info();
-    const res = await b2.listFileNames({ bucketId });
-    const file = res.data.files.find(f => f.fileName === remote);
-    await b2.deleteFileVersion({
-      fileId: file.fileId,
-      fileName: file.fileName
-    });
-    return {
-      name: file.fileName,
-      type: file.contentType,
-      size: file.contentLength,
-      url: baseURL + file.fileName,
-      timestamp: new Date(file.uploadTimestamp)
-    };
+    const { bucketId } = await info();
+
+    const remoteFile = file(remote);
+
+    while (await exists(remote)) {
+      const res = await b2.listFileNames({ bucketId });
+      const toDelete = res.data.files.find(f => f.fileName === remote);
+
+      await b2.deleteFileVersion({
+        fileId: toDelete.fileId,
+        fileName: toDelete.fileName
+      });
+    }
+    return remoteFile;
   };
 
   return { info, list, count, exists, upload, download, remove };
