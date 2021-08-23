@@ -2,7 +2,14 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import dotenv from "dotenv";
+import { customAlphabet } from "nanoid";
+
 import Bucket from "../index.js";
+
+const nanoid = customAlphabet(
+  "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+  10
+);
 
 dotenv.config();
 
@@ -10,18 +17,29 @@ const bucket = Bucket("bucket-demo");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const idA = nanoid();
+const idB = nanoid();
+
 beforeAll(async () => {
   let init = new Date();
   await bucket.info();
   console.log("Info:", new Date() - init, "ms");
   init = new Date();
   await Promise.all([
-    bucket.upload(__dirname + "/example.png", "AmZmqtAgTA.png"),
-    bucket.upload(__dirname + "/example.png", "demo/pnckl8xnaG.png"),
+    bucket.upload(__dirname + "/example.png", idA + ".png"),
+    bucket.upload(__dirname + "/example.png", "demo/" + idB + ".png"),
     bucket.upload(__dirname + "/data.json", "data.json"),
     bucket.upload(__dirname + "/data.json", "demo/data.json")
   ]);
   console.log("Upload:", new Date() - init, "ms");
+}, 30000);
+
+afterAll(async () => {
+  await Promise.all([
+    bucket.remove(idA + ".png"),
+    bucket.remove("demo/" + idB + ".png")
+  ]).catch(() => console.log("ok"));
+  console.log("Cleaned");
 }, 30000);
 
 describe(".info()", () => {
@@ -43,33 +61,33 @@ describe(".list()", () => {
   it("can list all of the files", async () => {
     const list = await bucket.list();
     const names = list.map(file => file.name);
-    expect(names).toContain("AmZmqtAgTA.png");
-    expect(names).toContain("demo/pnckl8xnaG.png");
+    expect(names).toContain(idA + ".png");
+    expect(names).toContain("demo/" + idB + ".png");
   });
 
   it("can filter by file name", async () => {
-    const list = await bucket.list("AmZm");
-    expect(list[0].name).toEqual("AmZmqtAgTA.png");
+    const list = await bucket.list(idA.slice(0, 4));
+    expect(list.map(it => it.name)).toContain(idA + ".png");
   });
 
   it("can namespace by folder", async () => {
     const list = await bucket.list("demo/");
     const names = list.map(file => file.name);
-    expect(names).toContain("demo/pnckl8xnaG.png");
-    expect(names).not.toContain("AmZmqtAgTA.png");
+    expect(names).toContain("demo/" + idB + ".png");
+    expect(names).not.toContain(idA + ".png");
   });
 
   it("can namespace by folder", async () => {
     const list = await bucket.list("/demo/");
     const names = list.map(file => file.name);
-    expect(names).toContain("demo/pnckl8xnaG.png");
-    expect(names).not.toContain("AmZmqtAgTA.png");
+    expect(names).toContain("demo/" + idB + ".png");
+    expect(names).not.toContain(idA + ".png");
   });
 });
 
 describe(".exists()", () => {
   it("can make sure a filename exists", async () => {
-    const there = await bucket.exists("AmZmqtAgTA.png");
+    const there = await bucket.exists(idA + ".png");
     const notthere = await bucket.exists("abc.png");
 
     expect(there).toBe(true);
@@ -94,8 +112,8 @@ describe(".upload()", () => {
 
 describe(".download()", () => {
   it("can download a file", async () => {
-    const file = await bucket.download("AmZmqtAgTA.png");
-    expect(file.split("/").pop()).toBe("AmZmqtAgTA.png");
+    const file = await bucket.download(idA + ".png");
+    expect(file.split("/").pop()).toBe(idA + ".png");
     await new Promise((done, fail) =>
       fs.unlink(file, error => (error ? fail(error) : done()))
     );
@@ -118,15 +136,15 @@ describe(".read()", () => {
 describe(".remove()", () => {
   it("can delete a file", async () => {
     const filesBefore = await bucket.list();
-    expect(filesBefore.map(file => file.name)).toContain("AmZmqtAgTA.png");
+    expect(filesBefore.map(file => file.name)).toContain(idA + ".png");
 
     // Returns the right parameters
-    const file = await bucket.remove("AmZmqtAgTA.png");
-    expect(file).toHaveProperty("name", "AmZmqtAgTA.png");
+    const file = await bucket.remove(idA + ".png");
+    expect(file).toHaveProperty("name", idA + ".png");
     expect(file).toHaveProperty("type", "image/png");
 
     const filesAfter = await bucket.list();
-    expect(filesAfter.map(file => file.name)).not.toContain("AmZmqtAgTA.png");
+    expect(filesAfter.map(file => file.name)).not.toContain(idA + ".png");
   }, 30000);
 });
 
