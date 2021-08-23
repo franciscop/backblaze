@@ -17,7 +17,9 @@ beforeAll(async () => {
   init = new Date();
   await Promise.all([
     bucket.upload(__dirname + "/example.png", "AmZmqtAgTA.png"),
-    bucket.upload(__dirname + "/example.png", "demo/pnckl8xnaG.png")
+    bucket.upload(__dirname + "/example.png", "demo/pnckl8xnaG.png"),
+    bucket.upload(__dirname + "/data.json", "data.json"),
+    bucket.upload(__dirname + "/data.json", "demo/data.json")
   ]);
   console.log("Upload:", new Date() - init, "ms");
 }, 30000);
@@ -97,6 +99,19 @@ describe(".download()", () => {
     await new Promise((done, fail) =>
       fs.unlink(file, error => (error ? fail(error) : done()))
     );
+  }, 10000);
+});
+
+describe(".read()", () => {
+  it("can read a file", async () => {
+    const file = await bucket.read("data.json");
+    expect(file.length).toBe(23);
+    expect(file).toEqual(`{\n  "hello": "world"\n}\n`);
+  }, 10000);
+
+  it("can read and decode a file", async () => {
+    const file = await bucket.read("data.json").then(JSON.parse);
+    expect(file).toEqual({ hello: "world" });
   }, 10000);
 });
 

@@ -94,6 +94,22 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     return Boolean(files.find(file => file.name === remote));
   };
 
+  const read = async remote => {
+    // Allow to pass an object with the full file description
+    remote = remote.name || remote;
+    remote = remote.replace(/^\//, "");
+
+    // Ignore any leading slash
+    remote = remote.replace(/^\//, "");
+    const { bucketId } = await info();
+    const down = await b2.downloadFileByName({
+      bucketName: name,
+      fileName: remote,
+      responseType: "arraybuffer"
+    });
+    return down.data.toString();
+  };
+
   const download = async (remote, local) => {
     // Allow to pass an object with the full file description
     remote = remote.name || remote;
@@ -158,5 +174,5 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     return remoteFile;
   };
 
-  return { info, list, count, exists, upload, download, remove };
+  return { info, list, count, exists, upload, read, download, remove };
 }

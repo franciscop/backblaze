@@ -40,6 +40,7 @@ All of the methods are async so they should be used with `await`:
 - [`bucket.count()`](#count): display the number of items inside a bucket.
 - [`bucket.upload(local, remote)`](#upload): upload a local file to the bucket.
 - [`bucket.download(remote, local)`](#download): downloads a file from the bucket into the server.
+- [`bucket.read(remote)`](#read): read a file straight away.
 - [`bucket.exists(remote)`](#exists): check whether a file exists on the bucket.
 - [`bucket.remove(remote)`](#remove): delete a file from the bucket.
 
@@ -257,6 +258,23 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+```
+
+### .read()
+
+Gets the content of the given file into a variable:
+
+```js
+bucket.read(remoteFileName) => file data
+```
+
+The arguments are:
+
+- `remoteFileName` (required): the name of the file in the bucket. It can be inside a folder as well. You can pass either a plain string with the name, or [a full File](#file) reference.
+
+```js
+const raw = await bucket.read("mydata.json");
+const data = JSON.parse(raw);
 ```
 
 ### .exists()
