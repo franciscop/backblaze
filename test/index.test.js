@@ -1,8 +1,8 @@
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import fs from "fs";
+import { customAlphabet } from "nanoid";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
-import dotenv from "dotenv";
-import { customAlphabet } from "nanoid";
 
 import Bucket from "../index.js";
 
@@ -10,8 +10,6 @@ const nanoid = customAlphabet(
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
   10
 );
-
-dotenv.config();
 
 const bucket = Bucket("bucket-demo");
 
@@ -32,7 +30,7 @@ beforeAll(async () => {
     bucket.upload(__dirname + "/data.json", "demo/data.json")
   ]);
   console.log("Upload:", new Date() - init, "ms");
-}, 30000);
+});
 
 afterAll(async () => {
   await Promise.all([
@@ -40,7 +38,7 @@ afterAll(async () => {
     bucket.remove("demo/" + idB + ".png")
   ]).catch(() => console.log("ok"));
   console.log("Cleaned");
-}, 30000);
+});
 
 describe(".info()", () => {
   it("can be initialized", async () => {
