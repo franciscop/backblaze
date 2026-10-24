@@ -18,7 +18,7 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
   const b2 = new B2({ applicationKeyId: id, applicationKey: key });
   let bucket = {};
 
-  const bucketProm = new Promise(async (done, fail) => {
+  const bucketProm = (async () => {
     try {
       const auth = await b2.authorize(); // must authorize first
       const baseURL = auth.data.downloadUrl + "/file/" + name + "/";
@@ -29,12 +29,12 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
       // const raw = list.data.buckets.find(b => b.bucketName === name);
 
       bucket = { ...raw, baseURL };
-      done(bucket);
+      return bucket;
     } catch (error) {
       console.error("AUTH", error.request ? error.request.res : error);
-      fail(error);
+      throw error;
     }
-  });
+  })();
 
   const info = () => bucketProm;
 
@@ -101,7 +101,7 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
 
     // Ignore any leading slash
     remote = remote.replace(/^\//, "");
-    const { bucketId } = await info();
+    await info();
     const down = await b2.downloadFileByName({
       bucketName: name,
       fileName: remote,
@@ -118,7 +118,7 @@ export default function(name, { id = env.B2_ID, key = env.B2_KEY } = {}) {
     // Ignore any leading slash
     remote = remote.replace(/^\//, "");
     local = local || "./" + remote;
-    const { bucketId } = await info();
+    await info();
     const down = await b2.downloadFileByName({
       bucketName: name,
       fileName: remote,
