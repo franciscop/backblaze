@@ -1,6 +1,6 @@
 {
   "name": "backblaze",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "An unofficial package to easily deal with Backblaze B2 API",
   "repository": "github:franciscop/backblaze",
   "author": "Francisco Presencia <public@francisco.io> (https://francisco.io/)",
