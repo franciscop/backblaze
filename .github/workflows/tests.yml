@@ -19,7 +19,7 @@ jobs:
       - name: Run the linter
         run: bun run lint
       - name: Run the tests
-        run: bun test --timeout 30000
+        run: bun run test
         env:
           CI: true
           B2_ID: ${{ secrets.B2_ID }}

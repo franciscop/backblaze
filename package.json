@@ -22,11 +22,11 @@
   "type": "module",
   "files": [],
   "dependencies": {
-    "backblaze-b2": "^1.5.0",
-    "nanoid": "^3.1.9"
+    "backblaze-b2": "^1.7.1",
+    "nanoid": "^6.0.2"
   },
   "devDependencies": {
-    "@types/bun": "^1.2.0",
+    "@types/bun": "^1.4.4",
     "oxlint": "^1.89.0"
   }
 }
